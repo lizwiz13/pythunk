@@ -45,31 +45,58 @@ class Thunk(Generic[_T]):
         return bool(force(self))
 
     def __add__(self, other):
-        return Thunk(lambda: force(self) + force(other))
+        return Thunk(lambda x, y: x + y, self, other)
     
     def __sub__(self, other):
-        return Thunk(lambda: force(self) - force(other))
+        return Thunk(lambda x, y: x - y, self, other)
     
     def __mul__(self, other):
-        return Thunk(lambda: force(self) * force(other))
+        return Thunk(lambda x, y: x * y, self, other)
     
     def __matmul__(self, other):
-        return Thunk(lambda: self() @ other())
+        return Thunk(lambda x, y: x @ y, self, other)
     
     def __truediv__(self, other):
-        return Thunk(lambda: self() / other())
+        return Thunk(lambda x, y: x / y, self, other)
     
     def __floordiv__(self, other):
-        return Thunk(lambda: self() // other())
+        return Thunk(lambda x, y: x // y, self, other)
     
     def __mod__(self, other):
-        return Thunk(lambda: self() % other())
+        return Thunk(lambda x, y: x % y, self, other)
     
     def __divmod__(self, other):
-        return Thunk(lambda: divmod(self(), other()))
+        return Thunk(divmod, self, other)
     
     def __pow__(self, other, modulo=None):
-        return Thunk(lambda: pow(self, other, modulo))
+        return Thunk(pow, self, other, modulo)
+    
+    def __lshift__(self, other):
+        return Thunk(lambda x, y: x << y, self, other)
+    
+    def __rshift__(self, other):
+        return Thunk(lambda x, y: x >> y, self, other)
+    
+    def __and__(self, other):
+        return Thunk(lambda x, y: x & y, self, other)
+    
+    def __xor__(self, other):
+        return Thunk(lambda x, y: x ^ y, self, other)
+    
+    def __or__(self, other):
+        return Thunk(lambda x, y: x | y, self, other)
+    
+    def __neg__(self):
+        return Thunk(lambda x: -x, self)
+    
+    def __pos__(self):
+        return Thunk(lambda x: +x, self)
+    
+    def __abs__(self):
+        return Thunk(abs, self)
+    
+    def __invert__(self):
+        return Thunk(lambda x: ~x, self)
 
 
 # using force instead of __call__ is safer and allows binary operations between Thunks and other types
@@ -92,5 +119,4 @@ def fib(n):
         return 1
     if n < 0:
         return -fib(n+1) + fib(n+2)
-    else:
-        return fib(n-1) + fib(n-2)
+    return fib(n-1) + fib(n-2)
