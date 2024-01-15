@@ -2,7 +2,7 @@
 
 from .singleton import Singleton
 from typing import TypeVar, Generic, Callable
-from functools import total_ordering
+from functools import total_ordering, wraps
 
 # Not-Evaluated singleton class
 class NotEvaluated(metaclass=Singleton): pass
@@ -101,14 +101,24 @@ class Thunk(Generic[_T]):
 
 # using force instead of __call__ is safer and allows binary operations between Thunks and other types
 def force(x: Thunk[_T] | _T) -> _T:
-    if isinstance(x, Thunk):
-        return x()
-    return x
+    res = x
+    while isinstance(res, Thunk):
+        res = res()
+    return res
 
 
 def const(x: _T) -> Thunk[_T]:
     'Shortcut for creating Thunk with an already evaluated object.'
     return Thunk(lambda: x)
+
+
+def lazy(f: Callable[..., _T]) -> Callable[..., Thunk[_T]]:
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        return Thunk(f, *args, **kwargs)
+    
+    return wrapper
 
 
 # for testing purposes only
