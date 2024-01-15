@@ -1,6 +1,6 @@
 'Thunks for lazy evaluation with memoization'
 
-from singleton import Singleton
+from .singleton import Singleton
 from typing import TypeVar, Generic, Callable
 from functools import total_ordering
 
