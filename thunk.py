@@ -1,19 +1,24 @@
 'Thunks for lazy evaluation with memoization'
 
 from .singleton import Singleton
-from typing import TypeVar, Generic, Callable
+from typing import TypeVar, Generic, Callable, TypeGuard
 from functools import total_ordering, wraps
 
 # Not-Evaluated singleton class
-class NotEvaluated(metaclass=Singleton): pass
-_NE = NotEvaluated()
+class _NotEvaluated(metaclass=Singleton): pass
+_NE = _NotEvaluated()
 
 _T = TypeVar('_T')
+
+def _is_evaluated(x: _NotEvaluated | _T) -> TypeGuard[_T]:
+    'This function is useful to assert the type of Thunk.memo'
+    return x is not _NE
+
 
 @total_ordering
 class Thunk(Generic[_T]):
     susp: Callable[[], _T]
-    memo: NotEvaluated | _T
+    memo: _NotEvaluated | _T
 
     def __init__(self, f: Callable[..., _T], *args, **kwargs):
         # the if-else distinction decreases overhead from lambda and forcing in case of 0-parameter functions
@@ -24,9 +29,9 @@ class Thunk(Generic[_T]):
         self.memo = _NE
     
     def __call__(self) -> _T:
-        if self.memo is _NE:
+        if not _is_evaluated(self.memo):
             self.memo = self.susp()
-        return self.memo # type: ignore
+        return self.memo
 
     # repr still shows the thunk, but for readability it is better to evaluate the thunk
     def __str__(self):
@@ -99,16 +104,21 @@ class Thunk(Generic[_T]):
         return Thunk(lambda x: ~x, self)
 
 
+_LazyT = _T | Thunk['_LazyT[_T]']
+
+
 # using force instead of __call__ is safer and allows binary operations between Thunks and other types
-def force(x: Thunk[_T] | _T) -> _T:
-    res = x
-    while isinstance(res, Thunk):
-        res = res()
-    return res
+def force(x: _LazyT[_T]) -> _T:
+    '''Forces the value inside of a given thunk. 
+    
+    If a regular value is given, it is immediately returned. Flattens nested thunks.'''
+    if isinstance(x, Thunk):
+        return force(x())
+    return x
 
 
 def const(x: _T) -> Thunk[_T]:
-    'Shortcut for creating Thunk with an already evaluated object.'
+    'Shortcut for creating a thunk with an already evaluated object.'
     return Thunk(lambda: x)
 
 
@@ -122,6 +132,7 @@ def lazy(f: Callable[..., _T]) -> Callable[..., Thunk[_T]]:
 
 
 # for testing purposes only
+@lazy
 def fib(n):
     if n == 0:
         return 0
