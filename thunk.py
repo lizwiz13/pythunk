@@ -125,8 +125,8 @@ def lazy(f: Callable[..., _T]) -> Callable[..., Thunk[_T]]:
     return wrapper
 
 
-# for testing purposes only
+# for testing
 @lazy
-def fib(n):
+def _fib(n):
     if n <= 1: return n
-    return fib(n-1) + fib(n-2)
+    return _fib(n-1) + _fib(n-2)
