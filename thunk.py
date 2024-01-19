@@ -1,6 +1,6 @@
 'Thunks for lazy evaluation with memoization'
 
-from typing import TypeVar, Generic, Callable, TypeGuard
+from typing import TypeVar, Generic, Callable
 from functools import total_ordering, wraps
 
 _T = TypeVar('_T')
