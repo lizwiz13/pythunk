@@ -1,24 +1,14 @@
 'Thunks for lazy evaluation with memoization'
 
-from .singleton import Singleton
 from typing import TypeVar, Generic, Callable, TypeGuard
 from functools import total_ordering, wraps
 
-# Not-Evaluated singleton class
-class _NotEvaluated(metaclass=Singleton): pass
-_NE = _NotEvaluated()
-
 _T = TypeVar('_T')
-
-def _is_evaluated(x: _NotEvaluated | _T) -> TypeGuard[_T]:
-    'This function is useful to assert the type of Thunk.memo'
-    return x is not _NE
-
 
 @total_ordering
 class Thunk(Generic[_T]):
     susp: Callable[[], _T]
-    memo: _NotEvaluated | _T
+    memo: _T
 
     def __init__(self, f: Callable[..., _T], *args, **kwargs):
         # the if-else distinction decreases overhead from lambda and forcing in case of 0-parameter functions
@@ -26,12 +16,16 @@ class Thunk(Generic[_T]):
             self.susp = lambda: f(*map(force, args), **{k: force(v) for k, v in kwargs.items()})
         else:
             self.susp = f
-        self.memo = _NE
     
     def __call__(self) -> _T:
-        if not _is_evaluated(self.memo):
+        try:
+            return self.memo
+        except AttributeError as e:
+            if hasattr(self, 'memo'):
+                raise e
             self.memo = self.susp()
-        return self.memo
+            return self.memo
+
 
     # repr still shows the thunk, but for readability it is better to evaluate the thunk
     def __str__(self):
@@ -132,12 +126,11 @@ def lazy(f: Callable[..., _T]) -> Callable[..., Thunk[_T]]:
 
 
 # for testing purposes only
-@lazy
 def fib(n):
     if n == 0:
-        return 0
+        return const(0)
     if n == 1:
-        return 1
+        return const(1)
     if n < 0:
-        return -fib(n+1) + fib(n+2)
-    return fib(n-1) + fib(n-2)
+        return Thunk (lambda: -fib(n+1) + fib(n+2))
+    return Thunk(lambda: fib(n-1) + fib(n-2))
