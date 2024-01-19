@@ -120,17 +120,13 @@ def lazy(f: Callable[..., _T]) -> Callable[..., Thunk[_T]]:
 
     @wraps(f)
     def wrapper(*args, **kwargs):
-        return Thunk(f, *args, **kwargs)
+        return Thunk(lambda: force(f(*args, **kwargs)))
     
     return wrapper
 
 
 # for testing purposes only
+@lazy
 def fib(n):
-    if n == 0:
-        return const(0)
-    if n == 1:
-        return const(1)
-    if n < 0:
-        return Thunk (lambda: -fib(n+1) + fib(n+2))
-    return Thunk(lambda: fib(n-1) + fib(n-2))
+    if n <= 1: return n
+    return fib(n-1) + fib(n-2)
