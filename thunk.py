@@ -1,6 +1,6 @@
 'Thunks for lazy evaluation with memoization'
 
-from typing import TypeVar, Generic, Callable
+from typing import TypeVar, Generic, Callable, TypeAlias
 from functools import total_ordering, wraps, cached_property
 
 _T = TypeVar('_T')
@@ -71,7 +71,7 @@ class Thunk(Generic[_T]):
     def __invert__(self): return Thunk(lambda x: ~x, self)
 
 
-_LazyT = _T | Thunk['_LazyT[_T]']
+_LazyT: TypeAlias = _T | Thunk['_LazyT[_T]']
 
 
 # using force instead of __call__ is safer and allows binary operations between Thunks and other types
@@ -79,14 +79,18 @@ def force(x: _LazyT[_T]) -> _T:
     '''Forces the value inside of a given thunk. 
     
     If a regular value is given, it is immediately returned. Flattens nested thunks.'''
-    if isinstance(x, Thunk):
-        return force(x())
+    while isinstance(x, Thunk):
+        x = x()
+    return x # type: ignore
+
+
+def _identity(x: _T) -> _T:
     return x
 
 
 def const(x: _T) -> Thunk[_T]:
     'Shortcut for creating a thunk with an already evaluated object.'
-    return Thunk(lambda: x)
+    return Thunk(_identity, x) # type: ignore
 
 
 def lazy(f: Callable[..., _T]) -> Callable[..., Thunk[_T]]:
