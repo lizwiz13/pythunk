@@ -102,8 +102,21 @@ def lazy(f: Callable[..., _T]) -> Callable[..., Thunk[_T]]:
     return wrapper
 
 
+class Lazy(type):
+    'Metaclass for classes that create objects lazily.'
+    def __call__(cls, *args, **kwargs):
+        return Thunk(super(Lazy, cls).__call__, *args, **kwargs)
+
+
 # for testing
 @lazy
 def _fib(n):
     if n <= 1: return n
     return _fib(n-1) + _fib(n-2)
+
+# test class
+class _LazyClass(metaclass=Lazy):
+    num: int
+    def __init__(self, num: int):
+        self.num = num
+        print(f'_LazyClass instance initialized with value {self.num}.')
