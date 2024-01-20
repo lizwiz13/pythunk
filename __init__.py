@@ -1,1 +1,1 @@
-from pythunk.thunk import Thunk, force, const, lazy
+from pythunk.thunk import Thunk, force, const, lazy, Lazy
