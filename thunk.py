@@ -105,7 +105,7 @@ def lazy(f: Callable[..., _T]) -> Callable[..., Thunk[_T]]:
 class Lazy(type):
     'Metaclass for classes that create objects lazily.'
     def __call__(cls, *args, **kwargs):
-        return Thunk(super(Lazy, cls).__call__, *args, **kwargs)
+        return Thunk(lambda: super(Lazy, cls).__call__(*args, **kwargs))
 
 
 # for testing
